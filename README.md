@@ -12,15 +12,11 @@ DocBaseをVimで編集できるようにするプラグイン。
 
 ## 設定項目
 
-`g:docbase` : 以下キーを持つdict。または同dictのリスト
+`g:docbase` : 以下キーを持つdictのリスト
     * domain
     * token
 
 例:
-
-```
-g:docbase = { 'domain': 'example', 'token': '1b_z85n.83hrwefsv9cxm8ihwaemsv9p283rih' }
-```
 
 ```
 g:docbase = [
