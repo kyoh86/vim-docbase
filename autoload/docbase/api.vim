@@ -4,10 +4,10 @@ call s:V.load('Web.HTTP')
 let s:baseUrl = 'https://api.docbase.io'
 
 let s:api = {}
-let s:posts = {}
+let s:post = {}
 
-function! s:api.posts()
-  let service = deepcopy(s:posts)
+function! s:api.post()
+  let service = deepcopy(s:post)
   let service.root = self
   return service
 endfunction
@@ -21,7 +21,7 @@ endfunction
 "     | q          | 検索文字列       |      | *            |        |
 "     | page       | ページ           |      | 1            |        |
 "     | per_page   | ページ枚のメモ数 |      | 20           | 100    |
-function! s:posts.list(params)
+function! s:post.list(params)
   return self.root.get('/posts', a:params).posts
 endfunction
 
@@ -29,7 +29,7 @@ endfunction
 " Description: 指定したドメインのチームのメモのIDを指定して情報を取得します。
 " Arguments:
 "   - post_id: メモのID
-function! s:posts.get(post_id)
+function! s:post.get(post_id)
   return self.root.get('/posts/' . a:post_id, {})
 endfunction
 
@@ -47,7 +47,7 @@ endfunction
 "     | tags       | タグ名の配列             | String Array  |                          |              |
 "     | scope      | 公開範囲                 | String        |                          |              |
 "     | groups     | グループID配列           | Integer Array | scopeがgroupの時のみ必須 |              |
-function! s:posts.update(post_id, content)
+function! s:post.update(post_id, content)
   return self.root.patch('/posts/' . a:post_id, a:content)
 endfunction
 

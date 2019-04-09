@@ -1,37 +1,18 @@
-function! docbase#posts#list(domain)
-  let l:api = docbase#client(a:domain)
-  let l:posts = l:api.posts().list({})
-  let l:lines = map(l:posts, { _, post -> printf('%d: %s', post.id, post.title) })
-  let l:helps = [
-        \ '; ------------------------------------------',
-        \ '; Press <Enter> to edit a post in the line.',
-        \ '; To split window, press <C-v> or <C-x>.',
-        \ '; To fetch next page, press <C-n>.',
-        \ '; To quit, press "q".',
-        \ '; ------------------------------------------',
-      \ ]
-  let b:docbase_domain = a:domain
-  let b:docbase_startpos = len(l:helps) + 1
-  setlocal ft=docbase-list buftype=nofile bufhidden=hide
-  syntax match Number /^[0-9]\+\ze:/
-  syntax match Visual /^.*\%#.*/
-  syntax match Comment /^;.*/
+let s:V = vital#docbase#new()
+call s:V.load('Data.String')
 
-  autocmd BufEnter <buffer> silent call cursor(b:docbase_startpos, 1) | silent setlocal nomodified nomodifiable readonly
+function! docbase#post#list() abort
+  echo 'Loading posts...'
+  let l:page = b:docbase_path.page(1)
+  let l:posts = b:docbase_path.client().post().list({'page': l:page, 'per_page': 100})
 
-  nnoremap <nowait> <silent> <buffer> <esc> :bw!<cr>
-  nnoremap <nowait> <silent> <buffer> q :bw!<cr>
-  nnoremap <nowait> <silent> <buffer> <cr> :call <SID>list_posts_action('edit')<cr>
-  nnoremap <nowait> <silent> <buffer> <C-v> :call <SID>list_posts_action('vertical new')<cr>
-  nnoremap <nowait> <silent> <buffer> <C-x> :call <SID>list_posts_action('new')<cr>
-  nnoremap <nowait> <silent> <buffer> <C-n> :call <SID>list_posts_next()<cr>
-
-  return l:helps + l:lines
+  redraw
+  return docbase#menu#create(l:posts, v:true)
 endfunction
 
-function! docbase#posts#read(domain, post_id)
-  let l:api = docbase#client(a:domain)
-  let l:post = l:api.posts().get(a:post_id)
+function! docbase#post#read() abort
+  echo 'Loading a post...'
+  let l:post = b:docbase_path.client().post().get(b:docbase_path.id)
 
   " frontmatters:
   let l:tags = map(get(l:post, 'tags', []), { _, t -> t.name })
@@ -56,6 +37,7 @@ function! docbase#posts#read(domain, post_id)
   \ ]
 
   setl ft=docbase syntax=markdown
+  redraw
   return join(l:content, "\n")
 endfunction
 
@@ -63,21 +45,7 @@ function! s:yaml_list(list)
   return len(a:list) > 0 ? "\n  - " . join(a:list, "\n  - ") : '[]'
 endfunction
 
-function! s:list_posts_action(edit)
-  let l:line = getline('.')
-  if l:line =~# '^; '
-    return
-  endif
-  let l:post_id = split(l:line, ':')[0]
-  echom docbase#build_urn('posts', b:docbase_domain, l:post_id)
-  execute a:edit . ' ' . docbase#build_urn('posts', b:docbase_domain, l:post_id)
-endfunction
-
-"TODO: list_posts_next
-
-function! docbase#posts#write(domain, id) abort
-  let l:api = docbase#client(a:domain)
-
+function! docbase#post#write() abort
   let l:tags = []
   let l:groups = []
 
@@ -145,7 +113,7 @@ function! docbase#posts#write(domain, id) abort
 
   " Frontmatterを除いた本文を取得して改行でつなぐ
   let l:option['body'] = join(getline(l:frontmatter, '$'), "\n")
-  call l:api.posts().update(a:id, l:option)
-  return ['done', '']
+  call b:docbase_path.client().post().update(b:docbase_path.id, l:option)
+  return ''
 endfunction
 
