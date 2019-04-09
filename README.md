@@ -2,6 +2,10 @@
 
 DocBaseをVimで編集できるようにするプラグイン。
 
+## 必要な依存プラグイン
+
+* [vim-metarw](https://github.com/kana/vim-metarw)
+
 ## 設定項目
 
 `g:docbase` : 以下キーを持つdictのリスト
@@ -17,6 +21,10 @@ g:docbase = [
   \ { 'domain': 'sample', 'token': '1f_a89x.oo08yudfsjawofaj8hiqwnskljweiu' }
   \ ]
 ```
+
+### 注意
+
+**tokenを含むこれらの設定を `vimrc` に書く場合、dotfilesなどにアップロードしないこと**
 
 ## 編集方法
 
