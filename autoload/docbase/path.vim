@@ -93,6 +93,7 @@ endfunction
 " | docbase:domain               | docbase#root#objects |
 " | docbase:domain:object        | docbase#object#list  |
 " | docbase:domain:object:000000 | docbase#object#read  |
+" TODO : docbase:domain:object:new : 新規作成
 function! s:path.reader() abort
   if self.domain ==# ''
     return function('docbase#root#domains')
