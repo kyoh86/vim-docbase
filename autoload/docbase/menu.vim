@@ -15,12 +15,14 @@ function! docbase#menu#create(menus, paging) abort
         \ '; -------------------------------------------------'
       \ ]
   let b:docbase_startpos = len(l:helps) + 1
-  setlocal ft=docbase-list buftype=nofile bufhidden=hide
+  setlocal filetype=docbase-list buftype=nofile bufhidden=hide
   syntax match Number /^[^:]\+\ze:/
   syntax match Visual /^.*\%#.*/
   syntax match Comment /^;.*/
 
-  autocmd BufEnter <buffer> silent call cursor(b:docbase_startpos, 1) | silent setlocal nomodified nomodifiable readonly
+  augroup DocBaseMenu
+    autocmd BufEnter <buffer> silent call cursor(b:docbase_startpos, 1) | silent setlocal nomodified nomodifiable readonly
+  augroup END
 
   nnoremap <nowait> <silent> <buffer> <esc> :bw!<cr>
   nnoremap <nowait> <silent> <buffer> q     :bw!<cr>

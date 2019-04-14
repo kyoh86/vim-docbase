@@ -22,7 +22,7 @@ endfunction
 "     | page       | ページ           |      | 1            |        |
 "     | per_page   | ページ枚のメモ数 |      | 20           | 100    |
 function! s:post.list(params)
-  return self.root.get('/posts', a:params).posts
+  return self.root.get_in_team('/posts', a:params).posts
 endfunction
 
 " Function: メモの詳細取得
@@ -30,7 +30,7 @@ endfunction
 " Arguments:
 "   - post_id: メモのID
 function! s:post.get(post_id)
-  return self.root.get('/posts/' . a:post_id, {})
+  return self.root.get_in_team('/posts/' . a:post_id, {})
 endfunction
 
 " Function: メモの更新
@@ -48,7 +48,25 @@ endfunction
 "     | scope      | 公開範囲                 | String        |                          |              |
 "     | groups     | グループID配列           | Integer Array | scopeがgroupの時のみ必須 |              |
 function! s:post.update(post_id, content)
-  return self.root.patch('/posts/' . a:post_id, a:content)
+  return self.root.patch_in_team('/posts/' . a:post_id, a:content)
+endfunction
+
+" Function: メモの作成
+" Description: 指定したドメインのチームに新しいメモを投稿します。
+" Arguments:
+"   - content: 更新内容
+"     | パラメータ | 内容                     | 型            | 必須                     | デフォルト値 |
+"     | ---------- | ------------------------ | ------------- | ------------------------ | ------------ |
+"     | title      | メモのタイトル           | String        |                          |              |
+"     | body       | メモの本文               | String        |                          |              |
+"     | draft      | 下書き保存にするかどうか | Boolean       |                          |              |
+"     | notice     | 通知するかどうか         | Boolean       |                          | true         |
+"     | tags       | タグ名の配列             | String Array  |                          |              |
+"     | scope      | 公開範囲                 | String        |                          |              |
+"     | groups     | グループID配列           | Integer Array | scopeがgroupの時のみ必須 |              |
+"
+function! s:post.create(content)
+  return self.root.post_in_team('/posts', a:content)
 endfunction
 
 function! s:api.header()
@@ -59,15 +77,15 @@ function! s:api.teamUrl(path)
   return s:baseUrl . '/teams/' . self.domain . a:path
 endfunction
 
-function! s:api.get(path, param)
+function! s:api.get_in_team(path, param)
   let l:response = s:V.Web.HTTP.get(self.teamUrl(a:path), a:param, self.header())
-  if l:response.status != 200
+  if l:response.status >= 400
     throw printf('failed to docbase.get (%d: %s)', l:response.status, l:response.content)
   endif
   return json_decode(l:response.content)
 endfunction
 
-function! s:api.patch(path, body)
+function! s:api.patch_in_team(path, body)
   let l:response = s:V.Web.HTTP.request(
     \ 'PATCH',
     \ self.teamUrl(a:path),
@@ -76,8 +94,23 @@ function! s:api.patch(path, body)
       \ 'headers': self.header()
     \ }
   \ )
-  if l:response.status != 200
+  if l:response.status >= 400
     throw printf('failed to docbase.patch (%d: %s)', l:response.status, l:response.content)
+  endif
+  return json_decode(l:response.content)
+endfunction
+
+function! s:api.post_in_team(path, body)
+  let l:response = s:V.Web.HTTP.request(
+    \ 'POST',
+    \ self.teamUrl(a:path),
+    \ {
+      \ 'data': json_encode(a:body),
+      \ 'headers': self.header()
+    \ }
+  \ )
+  if l:response.status >= 400
+    throw printf('failed to docbase.post (%d: %s)', l:response.status, l:response.content)
   endif
   return json_decode(l:response.content)
 endfunction

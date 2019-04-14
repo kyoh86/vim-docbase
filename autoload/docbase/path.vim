@@ -93,7 +93,7 @@ endfunction
 " | docbase:domain               | docbase#root#objects |
 " | docbase:domain:object        | docbase#object#list  |
 " | docbase:domain:object:000000 | docbase#object#read  |
-" TODO : docbase:domain:object:new : 新規作成
+" | docbase:domain:object:new    | docbase#object#new   |
 " TODO : docbase:domain:object:search : 検索
 function! s:path.reader() abort
   if self.domain ==# ''
@@ -108,23 +108,31 @@ function! s:path.reader() abort
     return function('docbase#' . self.object . '#list')
   endif
 
+  if self.id ==# 'new'
+    return function('docbase#' . self.object . '#new')
+  endif
+
   return function('docbase#' . self.object . '#read')
 endfunction
 
 " Function: path.writer : 指定されたURNへの書き込む処理へのマッピングを行う
-" | path                         | function             |
-" | ---------------------------- | -------------------- |
-" | docbase:                     | invalid              |
-" | docbase:domain               | invalid              |
-" | docbase:domain:object        | invalid              |
-" | docbase:domain:object:000000 | docbase#object#write |
+" | path                         | function              |
+" | ---------------------------- | --------------------- |
+" | docbase:                     | invalid               |
+" | docbase:domain               | invalid               |
+" | docbase:domain:object        | invalid               |
+" | docbase:domain:object:000000 | docbase#object#write  |
+" | docbase:domain:object:new    | docbase#object#create |
 function! s:path.writer() abort
   if self.domain ==# '' || self.object ==# '' || self.id ==# ''
     return function('<SID>invalid')
   endif
 
-  let l:funcname = printf('docbase#%s#write', self.object)
-  return function(l:funcname)
+  if self.id ==# 'new'
+    return function('docbase#' . self.object . '#create')
+  endif
+
+  return function('docbase#' . self.object . '#write')
 endfunction
 
 function! s:path.client()
@@ -152,7 +160,9 @@ function! s:path.client()
     throw 'g:docbase has no token option'
   endif
 
-  let self.api = { self.domain: docbase#api#new(l:option.domain, l:option.token) }
+  let l:api = docbase#api#new(l:option.domain, l:option.token)
+  let self.api = {}
+  let self.api[self.domain] = l:api
   return self.api[self.domain]
 endfunction
 
