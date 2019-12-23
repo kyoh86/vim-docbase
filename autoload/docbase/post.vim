@@ -4,18 +4,21 @@ let s:V = vital#docbase#new()
 call s:V.load('Data.String')
 
 function! docbase#post#list() abort
-  echo 'Loading posts...'
-  let l:page = b:docbase_path.page(1)
-  let l:posts = b:docbase_path.client().post().list({'page': l:page, 'per_page': 100})
-  let l:posts = [{'id': 'new', 'title': '投稿の新規作成'}] + l:posts
+  echo 'メモを読み込んでいます...'
+  let l:page = b:docbase_urn.page(1)
+  let l:client = docbase#client#for(b:docbase_urn.domain)
+  let l:posts = l:client.post().list({'page': l:page, 'per_page': 100})
+  let l:posts = map(l:posts, {_, item -> [item.id, item.title]})
+  let l:posts = [['new', 'メモの新規作成']] + l:posts
 
   redraw
   return docbase#menu#create(l:posts, v:true)
 endfunction
 
 function! docbase#post#read() abort
-  echo 'Loading a post...'
-  let l:post = b:docbase_path.client().post().get(b:docbase_path.id)
+  echo 'メモを読み込んでいます...'
+  let l:client = docbase#client#for(b:docbase_urn.domain)
+  let l:post = l:client.post().get(b:docbase_urn.id)
 
   " frontmatters:
   let l:tags = map(get(l:post, 'tags', []), { _, t -> t.name })
@@ -23,7 +26,6 @@ function! docbase#post#read() abort
   let l:scope = get(l:post, 'scope', v:null)
   let l:content = [
     \ '---',
-    \ '',
     \ 'title: ' . json_encode(l:post.title),
     \ 'draft: ' . json_encode(get(l:post, 'draft', v:false)),
     \ 'notice: true',
@@ -31,17 +33,19 @@ function! docbase#post#read() abort
     \ 'scope: ' . json_encode(l:scope)
     \ ]
   if l:scope ==# 'group'
+    let l:props += 1
     let l:content += [
       \ 'groups: ' . s:yaml_list(l:groups)
     \ ]
   endif
   let l:content += [
-    \ '',
     \ '---',
+    \ ]
+  let b:docbase_start_lnum = len(l:content) + 2
+  let l:content += [
     \ substitute(l:post.body, "\r", '', 'g')
-  \ ]
+    \ ]
 
-  setlocal filetype=docbase syntax=markdown
   redraw
   return join(l:content, "\n")
 endfunction
@@ -50,23 +54,17 @@ function! docbase#post#new() abort
   " frontmatters:
   let l:content = [
     \ '---',
-    \ '',
     \ 'title: ',
     \ 'draft: true',
     \ 'notice: true',
     \ 'tags: []',
     \ 'scope: private',
-    \ ]
-  let l:content += [
-    \ '',
-    \ '---'
+    \ '---',
+    \ ''
   \ ]
+  let b:docbase_start_lnum = 2
+  let b:docbase_start_col = strlen('title: ')
 
-  augroup DocBaseNew
-    autocmd BufEnter <buffer> silent call cursor(3, 7) | silent setlocal nomodified
-  augroup END
-
-  setlocal filetype=docbase syntax=markdown
   redraw
   return join(l:content, "\n")
 endfunction
@@ -165,17 +163,19 @@ endfunction
 
 function! docbase#post#write() abort
   let l:post = s:parse_post()
-  call b:docbase_path.client().post().update(b:docbase_path.id, l:post)
+  let l:client = docbase#client#for(b:docbase_urn.domain)
+  call l:client.post().update(b:docbase_urn.id, l:post)
   return ''
 endfunction
 
 function! docbase#post#create() abort
   let l:post = s:parse_post()
-  let l:post = b:docbase_path.client().post().create(l:post)
+  let l:client = docbase#client#for(b:docbase_urn.domain)
+  let l:post = l:client.post().create(l:post)
 
   " IDを投稿した結果のIDに置き換える
-  let b:docbase_path.id = l:post.id
-  execute 'file ' . b:docbase_path.string()
+  let b:docbase_urn.id = l:post.id
+  execute 'file ' . b:docbase_urn.string()
   return ''
 endfunction
 

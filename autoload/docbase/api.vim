@@ -1,7 +1,7 @@
 let s:V = vital#docbase#new()
 call s:V.load('Web.HTTP')
 
-let s:baseUrl = 'https://api.docbase.io'
+let s:base_url = 'https://api.docbase.io'
 
 let s:api = {}
 let s:post = {}
@@ -64,21 +64,20 @@ endfunction
 "     | tags       | タグ名の配列             | String Array  |                          |              |
 "     | scope      | 公開範囲                 | String        |                          |              |
 "     | groups     | グループID配列           | Integer Array | scopeがgroupの時のみ必須 |              |
-"
 function! s:post.create(content)
   return self.root.post_in_team('/posts', a:content)
 endfunction
 
 function! s:api.header()
-  return {'Content-type': 'application/json', 'X-DocBaseToken': self.token}
+  return {'Content-type': 'application/json', 'X-DocBaseToken': self.token, 'X-Api-Version': '2'}
 endfunction
 
-function! s:api.teamUrl(path)
-  return s:baseUrl . '/teams/' . self.domain . a:path
+function! s:api.team_url(path)
+  return s:base_url . '/teams/' . self.domain . a:path
 endfunction
 
 function! s:api.get_in_team(path, param)
-  let l:response = s:V.Web.HTTP.get(self.teamUrl(a:path), a:param, self.header())
+  let l:response = s:V.Web.HTTP.get(self.team_url(a:path), a:param, self.header())
   if l:response.status >= 400
     throw printf('failed to docbase.get (%d: %s)', l:response.status, l:response.content)
   endif
@@ -88,7 +87,7 @@ endfunction
 function! s:api.patch_in_team(path, body)
   let l:response = s:V.Web.HTTP.request(
     \ 'PATCH',
-    \ self.teamUrl(a:path),
+    \ self.team_url(a:path),
     \ {
       \ 'data': json_encode(a:body),
       \ 'headers': self.header()
@@ -103,7 +102,7 @@ endfunction
 function! s:api.post_in_team(path, body)
   let l:response = s:V.Web.HTTP.request(
     \ 'POST',
-    \ self.teamUrl(a:path),
+    \ self.team_url(a:path),
     \ {
       \ 'data': json_encode(a:body),
       \ 'headers': self.header()
