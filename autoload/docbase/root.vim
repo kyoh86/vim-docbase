@@ -1,6 +1,6 @@
-function! docbase#root#domains()
+function! docbase#root#domains(urn)
   let l:domains = docbase#config#domain_names()
-  call map(l:domains, { _, domain -> [ domain ]})
+  call map(l:domains, { _, domain -> { 'label': domain, 'fakepath': 'docbase:' . domain } })
 
-  return docbase#menu#create(l:domains, v:false)
+  return l:domains
 endfunction

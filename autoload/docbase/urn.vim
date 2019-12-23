@@ -15,12 +15,13 @@ function! docbase#urn#parse(str) abort
   let l:paramlist = split(get(l:parts, 1, ''), '[&=]')
   let l:params = s:V.Data.Dict.from_list(l:paramlist)
 
-  let l:parts = s:V.Data.String.nsplit(l:parts[0], 3, ':')
+  let l:parts = split(l:parts[0], ':', v:true)
   let l:urn = deepcopy(s:urn)
   let l:urn.scheme = get(l:parts, 0, '')
   let l:urn.domain = get(l:parts, 1, '')
   let l:urn.id     = get(l:parts, 2, '')
   let l:urn.params = l:params
+  let l:urn.level = len(l:parts)
   call l:urn.validate()
   return l:urn
 endfunction
@@ -35,7 +36,7 @@ function! s:urn.filetype() abort
 endfunction
 
 " 次の階層に指定のIDを指定したURNを返す
-function! s:urn.digg(next_level) abort
+function! s:urn.digg(digg_id) abort
   let l:digged = deepcopy(self)
   let l:key = ''
   if self.domain ==# ''
@@ -45,34 +46,12 @@ function! s:urn.digg(next_level) abort
   endif
 
   if l:key !=# ''
-    let l:digged[l:key] = a:next_level
+    let l:digged[l:key] = a:digg_id
     let l:digged.params = {}
+    let l:digged.level = 3
   endif
 
   return l:digged
-endfunction
-
-function! s:urn.page(...) abort
-  let l:page = get(self.params, 'page', 0)
-  if l:page == 0 && len(a:000) > 0
-    let l:page = a:0
-    let self.params.page = l:page
-  endif
-  return l:page
-endfunction
-
-function! s:urn.next_page() abort
-  let l:page = self.page(1)
-  let l:next = deepcopy(self)
-  let l:next.params.page = l:page + 1
-  return l:next
-endfunction
-
-function! s:urn.prev_page() abort
-  let l:page = self.page(1)
-  let l:next = deepcopy(self)
-  let l:next.params.page = l:page - 1
-  return l:next
 endfunction
 
 function! s:urn.string() abort
@@ -97,7 +76,7 @@ function! s:urn.string() abort
   return l:str
 endfunction
 
-" Function: urn.reader : 指定されたURNの内容を読みこむ処理へのマッピングを行う
+" Function: urn.read : 指定されたURNの内容を読みこむ
 " | urn                  | function             |
 " | --------------------- | -------------------- |
 " | docbase:              | docbase#root#domains |
@@ -105,39 +84,64 @@ endfunction
 " | docbase:domain:000000 | docbase#post#read    |
 " | docbase:domain:new    | docbase#post#new     |
 " TODO : docbase:domain:post:search : 検索
-function! s:urn.reader() abort
+function! s:urn.read() abort
   if self.domain ==# ''
-    return function('docbase#root#domains')
+    return ['browse', docbase#root#domains(self)]
   endif
-
+ 
   if self.id ==# ''
-    return function('docbase#post#list')
+    return ['browse', docbase#post#list(self)]
   endif
 
   if self.id ==# 'new'
-    return function('docbase#post#new')
+    return ['read', function('docbase#post#new', [self])]
   endif
 
-  return function('docbase#post#read')
+  return ['read', function('docbase#post#read', [self])]
 endfunction
 
-" Function: urn.writer : 指定されたURNへの書き込む処理へのマッピングを行う
+" Function: urn.write : 指定されたURNへの書き込む処理へのマッピングを行う
 " | urn                  | function            |
 " | --------------------- | ------------------- |
 " | docbase:              | invalid             |
 " | docbase:domain        | invalid             |
 " | docbase:domain:000000 | docbase#post#write  |
 " | docbase:domain:new    | docbase#post#create |
-function! s:urn.writer() abort
+function! s:urn.write() abort
   if self.domain ==# '' ||  self.id ==# ''
     return function('<SID>invalid')
   endif
 
   if self.id ==# 'new'
-    return function('docbase#post#create')
+    return docbase#post#create(self)
   endif
 
-  return function('docbase#post#write')
+  return docbase#post#write(self)
+endfunction
+
+" Function: urn.complete : 指定されたURNの補完を提供する
+" | urn                        | level | returns                                            |
+" | -------------------------- | ----- | -------------------------------------------------- |
+" | docbase:                   | 2     | [[domains...], 'docbase:', '']                     |
+" | docbase:frag               | 2     | [[domains...], 'docbase:', 'frag']                 |
+" | docbase:domain:            | 3     | [[post_ids...], 'docbase:domain:', '']             |
+" | docbase:domain:[1-9][0-9]* | 3     | [[post_ids...], 'docbase:domain:', '[1-9][0-9]*']  |
+" | docbase:domain:n(ew?)?     | 3     | [['new'], 'docbase:domain:', 'n(ew?)?']            |
+function! s:urn.complete(arg_lead, cmdline, cursor_pos) abort
+  echom 'lev: ' . self.level
+  if self.level == 2
+    return [map(docbase#config#domain_names(), {_, d -> 'docbase:' . d}), 'docbase:', self.domain]
+  elseif self.level == 3
+    if self.id ==# ''
+      return [['docbase:' . self.domain . ':new'] + docbase#post#list_urns(self), 'docbase:' . self.domain . ':', self.id]
+    elseif self.id =~ '^[1-9]'
+      return [docbase#post#list_urns(self), 'docbase:' . self.domain . ':', self.id]
+    else
+      return [['docbase:' . self.domain . ':new'], 'docbase:' . self.domain . ':', self.id]
+    endif
+  else
+    return [[], a:arg_lead, '']
+  endif
 endfunction
 
 function! s:invalid()

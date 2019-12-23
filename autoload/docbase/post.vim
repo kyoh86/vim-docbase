@@ -3,22 +3,45 @@ scriptencoding utf-8
 let s:V = vital#docbase#new()
 call s:V.load('Data.String')
 
-function! docbase#post#list() abort
+function! docbase#post#list_ids(urn) abort
   echo 'メモを読み込んでいます...'
-  let l:page = b:docbase_urn.page(1)
-  let l:client = docbase#client#for(b:docbase_urn.domain)
-  let l:posts = l:client.post().list({'page': l:page, 'per_page': 100})
-  let l:posts = map(l:posts, {_, item -> [item.id, item.title]})
-  let l:posts = [['new', 'メモの新規作成']] + l:posts
-
-  redraw
-  return docbase#menu#create(l:posts, v:true)
+  let l:client = docbase#client#for(a:urn.domain)
+  let l:posts = l:client.post().list({'per_page': 100})
+  let l:posts = map(l:posts, {_, item -> item.id})
+  return l:posts
 endfunction
 
-function! docbase#post#read() abort
+function! docbase#post#list_urns(urn) abort
   echo 'メモを読み込んでいます...'
-  let l:client = docbase#client#for(b:docbase_urn.domain)
-  let l:post = l:client.post().get(b:docbase_urn.id)
+  let l:client = docbase#client#for(a:urn.domain)
+  let l:posts = l:client.post().list({'per_page': 100})
+  let l:posts = map(l:posts, {_, item -> 'docbase:' . a:urn.domain . ':' . item.id})
+  return l:posts
+endfunction
+
+function! docbase#post#list(urn) abort
+  echo 'メモを読み込んでいます...'
+  let l:client = docbase#client#for(a:urn.domain)
+  let l:posts = l:client.post().list({'per_page': 100})
+  let l:posts = map(l:posts, {_, item -> {
+        \ 'fakepath': 'docbase:' . a:urn.domain . ':' . item.id,
+        \ 'label': item.title
+        \ }})
+  let l:posts =
+        \ [{
+        \   'fakepath': 'docbase:',
+        \   'label': 'List Domains'
+        \ },{
+        \   'fakepath': 'docbase:' . a:urn.domain . ':new',
+        \   'label': 'メモの新規作成'
+        \ }] + l:posts
+  return l:posts
+endfunction
+
+function! docbase#post#read(urn) abort
+  echom 'メモを読み込んでいます...'
+  let l:client = docbase#client#for(a:urn.domain)
+  let l:post = l:client.post().get(a:urn.id)
 
   " frontmatters:
   let l:tags = map(get(l:post, 'tags', []), { _, t -> t.name })
@@ -29,19 +52,18 @@ function! docbase#post#read() abort
     \ 'title: ' . json_encode(l:post.title),
     \ 'draft: ' . json_encode(get(l:post, 'draft', v:false)),
     \ 'notice: true',
-    \ 'tags: ' . s:yaml_list(l:tags),
-    \ 'scope: ' . json_encode(l:scope)
+    \ 'scope: ' . json_encode(l:scope),
     \ ]
+  let l:content += s:yaml_list('tags', l:tags)
   if l:scope ==# 'group'
-    let l:props += 1
-    let l:content += [
-      \ 'groups: ' . s:yaml_list(l:groups)
-    \ ]
+    let l:content += s:yaml_list('groups', l:groups)
   endif
-  let l:content += [
-    \ '---',
-    \ ]
-  let b:docbase_start_lnum = len(l:content) + 2
+  let l:content += [ '---' ]
+
+  " start position
+  let b:docbase_start_lnum = len(l:content) + 1
+
+  " add content
   let l:content += [
     \ substitute(l:post.body, "\r", '', 'g')
     \ ]
@@ -50,7 +72,7 @@ function! docbase#post#read() abort
   return join(l:content, "\n")
 endfunction
 
-function! docbase#post#new() abort
+function! docbase#post#new(urn) abort
   " frontmatters:
   let l:content = [
     \ '---',
@@ -69,8 +91,11 @@ function! docbase#post#new() abort
   return join(l:content, "\n")
 endfunction
 
-function! s:yaml_list(list)
-  return len(a:list) > 0 ? "\n  - " . join(a:list, "\n  - ") : '[]'
+function! s:yaml_list(prop, list)
+  if len(a:list) > 0
+    return [a:prop . ':'] + map(a:list, {_, i -> '  - ' . i})
+  endif
+  return [a:prop . ': []']
 endfunction
 
 function! s:parse_post() abort
@@ -161,21 +186,21 @@ function! s:parse_post() abort
   return l:post
 endfunction
 
-function! docbase#post#write() abort
+function! docbase#post#write(urn) abort
   let l:post = s:parse_post()
-  let l:client = docbase#client#for(b:docbase_urn.domain)
-  call l:client.post().update(b:docbase_urn.id, l:post)
+  let l:client = docbase#client#for(a:urn.domain)
+  call l:client.post().update(a:urn.id, l:post)
   return ''
 endfunction
 
-function! docbase#post#create() abort
+function! docbase#post#create(urn) abort
   let l:post = s:parse_post()
-  let l:client = docbase#client#for(b:docbase_urn.domain)
+  let l:client = docbase#client#for(a:urn.domain)
   let l:post = l:client.post().create(l:post)
 
   " IDを投稿した結果のIDに置き換える
-  let b:docbase_urn.id = l:post.id
-  execute 'file ' . b:docbase_urn.string()
+  let a:urn.id = l:post.id
+  execute 'file ' . a:urn.string()
   return ''
 endfunction
 
