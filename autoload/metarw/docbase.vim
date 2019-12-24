@@ -12,7 +12,27 @@
 function! metarw#docbase#read(fakepath) abort
   let l:urn = docbase#urn#parse(a:fakepath)
   let b:docbase_urn = l:urn
-  return l:urn.read()
+  "
+  " | urn                  | function             |
+  " | --------------------- | -------------------- |
+  " | docbase:              | docbase#root#domains |
+  " | docbase:domain:?      | docbase#post#list    |
+  " | docbase:domain:000000 | docbase#post#read    |
+  " | docbase:domain:new    | docbase#post#new     |
+  " TODO : docbase:domain:post:search : 検索
+  if l:urn.domain ==# ''
+    return ['browse', docbase#root#domains(l:urn)]
+  endif
+ 
+  if l:urn.id ==# ''
+    return ['browse', docbase#post#list(l:urn)]
+  endif
+
+  if l:urn.id ==# 'new'
+    return ['read', function('docbase#post#new', [l:urn])]
+  endif
+
+  return ['read', function('docbase#post#read', [l:urn])]
 endfunction
 
 " Function: metarw#docbase#write({fakepath}, {line1}, {line2}, {append_p})
@@ -22,12 +42,22 @@ endfunction
 "   - line2 will be ignored
 "   - append_p will be ignored
 function! metarw#docbase#write(fakepath, line1, line2, append_p) abort
-  try
-    call docbase#urn#parse(a:fakepath).write()
-    return ['done', '']
-  catch
-    return ['error', v:exception]
-  endtry
+  let l:urn = docbase#urn#parse(a:fakepath)
+  " | urn                  | function            |
+  " | --------------------- | ------------------- |
+  " | docbase:              | invalid             |
+  " | docbase:domain:?      | invalid             |
+  " | docbase:domain:000000 | docbase#post#write  |
+  " | docbase:domain:new    | docbase#post#create |
+  if l:urn.domain ==# '' ||  l:urn.id ==# ''
+    throw 'invalid operation' 
+  endif
+
+  if l:urn.id ==# 'new'
+    return ['write', function('docbase#post#create', [l:urn])]
+  endif
+
+  return ['write', function('docbase#post#write', [l:urn])]
 endfunction
 
 " Function: metarw#docbase#complete({arg_lead}, {cmdline}, {cursor_pos})
@@ -56,9 +86,25 @@ endfunction
 "     "foo/".
 function! metarw#docbase#complete(arg_lead, cmdline, cursor_pos)
   let l:urn = docbase#urn#parse(a:arg_lead)
-  echom 'arg:'.a:arg_lead
-  echom 'cmd:'.a:cmdline
-  let l:list = l:urn.complete(a:arg_lead, a:cmdline, a:cursor_pos)
-  echom json_encode(l:list)
-  return l:list
+
+" | arg_lead                   | level | returns                                            |
+" | -------------------------- | ----- | -------------------------------------------------- |
+" | docbase:                   | 2     | [[domains...], 'docbase:', '']                     |
+" | docbase:frag               | 2     | [[domains...], 'docbase:', 'frag']                 |
+" | docbase:domain:            | 3     | [[post_ids...], 'docbase:domain:', '']             |
+" | docbase:domain:[1-9][0-9]* | 3     | [[post_ids...], 'docbase:domain:', '[1-9][0-9]*']  |
+" | docbase:domain:n(ew?)?     | 3     | [['new'], 'docbase:domain:', 'n(ew?)?']            |
+  if l:urn.level == 2
+    return [map(docbase#config#domain_names(), {_, d -> 'docbase:' . d}), 'docbase:', l:urn.domain]
+  elseif l:urn.level == 3
+    if l:urn.id ==# ''
+      return [['docbase:' . l:urn.domain . ':new'] + docbase#post#list_urns(l:urn), 'docbase:' . l:urn.domain . ':', l:urn.id]
+    elseif l:urn.id =~ '^[1-9]'
+      return [docbase#post#list_urns(l:urn), 'docbase:' . l:urn.domain . ':', l:urn.id]
+    else
+      return [['docbase:' . l:urn.domain . ':new'], 'docbase:' . l:urn.domain . ':', l:urn.id]
+    endif
+  else
+    return [[], a:arg_lead, '']
+  endif
 endfunction

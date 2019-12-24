@@ -1,5 +1,7 @@
 scriptencoding utf-8
 
+"TODO: split this module to docbase#metarw#post.vim and docbase#post.vim
+"
 let s:V = vital#docbase#new()
 call s:V.load('Data.String')
 

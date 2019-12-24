@@ -1,3 +1,5 @@
+" TODO: move to docbase#api.vim
+
 let s:client_cache = {}
 
 function! docbase#client#for(domain) abort

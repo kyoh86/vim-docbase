@@ -1,6 +1,9 @@
 function! s:detect_docbase() abort
   if has_key(b:, 'docbase_urn')
-    execute 'set filetype=' . b:docbase_urn.filetype()
+    if b:docbase_urn.domain ==# '' || b:docbase_urn.id ==# ''
+      set filetype=docbase-browse
+    endif
+    set filetype=docbase
   endif
 endfunction
 

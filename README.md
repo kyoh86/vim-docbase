@@ -1,5 +1,8 @@
 # vim-docbase
 
+TODO: split this plugin to vim-metarw-docbase
+TODO: update this document
+
 DocBaseをVimで編集できるようにするプラグイン。
 
 ## 必要な依存プラグイン
