@@ -1,11 +1,12 @@
-" vim-docbase will read or write DocBase posts.
-"
-" This script will be called by vim-metarw (https://github.com/kana/vim-metarw)
-" If you want to ref metarw help: `:help metarw-schemes`
+scriptencoding utf-8
+
 "
 " Author: kyoh86
 " License: MIT
 
+" This function will be called by vim-metarw (https://github.com/kana/vim-metarw)
+" If you want to ref metarw help: `:help metarw-schemes`
+"
 " Function: metarw#docbase#read({fakepath})
 " Arg:
 "   - fakepath for docbase docbase:[<domain>[:<post-id>]]
@@ -13,28 +14,31 @@ function! metarw#docbase#read(fakepath) abort
   let l:urn = docbase#urn#parse(a:fakepath)
   let b:docbase_urn = l:urn
   "
-  " | urn                  | function             |
-  " | --------------------- | -------------------- |
-  " | docbase:              | docbase#root#domains |
-  " | docbase:domain:?      | docbase#post#list    |
-  " | docbase:domain:000000 | docbase#post#read    |
-  " | docbase:domain:new    | docbase#post#new     |
-  " TODO : docbase:domain:post:search : 検索
+  " | urn                  | function                  |
+  " | --------------------- | ------------------------ |
+  " | docbase:              | s:domains()              |
+  " | docbase:domain:?      | metarw#docbase#post#list |
+  " | docbase:domain:000000 | metarw#docbase#post#read |
+  " | docbase:domain:new    | metarw#docbase#post#new  |
+  " UNDONE: docbase:domain:post:search : 検索
   if l:urn.domain ==# ''
-    return ['browse', docbase#root#domains(l:urn)]
+    return ['browse', s:domains()]
   endif
  
   if l:urn.id ==# ''
-    return ['browse', docbase#post#list(l:urn)]
+    return ['browse', metarw#docbase#post#list(l:urn.domain)]
   endif
 
   if l:urn.id ==# 'new'
-    return ['read', function('docbase#post#new', [l:urn])]
+    return ['read', function('metarw#docbase#post#new', [l:urn])]
   endif
 
-  return ['read', function('docbase#post#read', [l:urn])]
+  return ['read', function('metarw#docbase#post#read', [l:urn])]
 endfunction
 
+" This function will be called by vim-metarw (https://github.com/kana/vim-metarw)
+" If you want to ref metarw help: `:help metarw-schemes`
+"
 " Function: metarw#docbase#write({fakepath}, {line1}, {line2}, {append_p})
 " Arg:
 "   - fakepath for docbase docbase:[<domain>[:<post-id>]]
@@ -43,23 +47,26 @@ endfunction
 "   - append_p will be ignored
 function! metarw#docbase#write(fakepath, line1, line2, append_p) abort
   let l:urn = docbase#urn#parse(a:fakepath)
-  " | urn                  | function            |
-  " | --------------------- | ------------------- |
-  " | docbase:              | invalid             |
-  " | docbase:domain:?      | invalid             |
-  " | docbase:domain:000000 | docbase#post#write  |
-  " | docbase:domain:new    | docbase#post#create |
+  " | urn                  | function                    |
+  " | --------------------- | -------------------------- |
+  " | docbase:              | invalid                    |
+  " | docbase:domain:?      | invalid                    |
+  " | docbase:domain:000000 | metarw#docbase#post#write  |
+  " | docbase:domain:new    | metarw#docbase#post#create |
   if l:urn.domain ==# '' ||  l:urn.id ==# ''
     throw 'invalid operation' 
   endif
 
   if l:urn.id ==# 'new'
-    return ['write', function('docbase#post#create', [l:urn])]
+    return ['write', function('metarw#docbase#post#create', [l:urn])]
   endif
 
-  return ['write', function('docbase#post#write', [l:urn])]
+  return ['write', function('metarw#docbase#post#write', [l:urn])]
 endfunction
 
+" This function will be called by vim-metarw (https://github.com/kana/vim-metarw)
+" If you want to ref metarw help: `:help metarw-schemes`
+"
 " Function: metarw#docbase#complete({arg_lead}, {cmdline}, {cursor_pos})
 " Arg:
 "   - arg_lead: the leading portion of the argument currently being completed on
@@ -95,16 +102,23 @@ function! metarw#docbase#complete(arg_lead, cmdline, cursor_pos)
 " | docbase:domain:[1-9][0-9]* | 3     | [[post_ids...], 'docbase:domain:', '[1-9][0-9]*']  |
 " | docbase:domain:n(ew?)?     | 3     | [['new'], 'docbase:domain:', 'n(ew?)?']            |
   if l:urn.level == 2
-    return [map(docbase#config#domain_names(), {_, d -> 'docbase:' . d}), 'docbase:', l:urn.domain]
+    return [map(docbase#config#domain_names(), {_, d -> 'docbase:' . d . ':'}), 'docbase:', l:urn.domain]
   elseif l:urn.level == 3
     if l:urn.id ==# ''
-      return [['docbase:' . l:urn.domain . ':new'] + docbase#post#list_urns(l:urn), 'docbase:' . l:urn.domain . ':', l:urn.id]
+      return [['docbase:' . l:urn.domain . ':new'] + metarw#docbase#post#list_urn(l:urn.domain), 'docbase:' . l:urn.domain . ':', l:urn.id]
     elseif l:urn.id =~ '^[1-9]'
-      return [docbase#post#list_urns(l:urn), 'docbase:' . l:urn.domain . ':', l:urn.id]
+      return [metarw#docbase#post#list_urn(l:urn.domain), 'docbase:' . l:urn.domain . ':', l:urn.id]
     else
       return [['docbase:' . l:urn.domain . ':new'], 'docbase:' . l:urn.domain . ':', l:urn.id]
     endif
   else
     return [[], a:arg_lead, '']
   endif
+endfunction
+
+function! s:domains()
+  let l:domains = docbase#config#domain_names()
+  call map(l:domains, { _, domain -> { 'label': domain, 'fakepath': 'docbase:' . domain } })
+
+  return l:domains
 endfunction

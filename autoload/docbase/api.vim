@@ -1,6 +1,21 @@
 let s:V = vital#docbase#new()
 call s:V.load('Web.HTTP')
 
+let s:api_cache = {}
+
+" Factory
+function! docbase#api#for(domain) abort
+  if has_key(s:api_cache, a:domain)
+    return s:api_cache[a:domain]
+  endif
+
+  let l:option = docbase#config#for(a:domain)
+
+  let l:api = docbase#api#new(a:domain, l:option.token)
+  let s:api_cache[a:domain] = l:api
+  return l:api
+endfunction
+
 let s:base_url = 'https://api.docbase.io'
 
 let s:api = {}
@@ -23,6 +38,14 @@ endfunction
 "     | per_page   | ページ枚のメモ数 |      | 20           | 100    |
 function! s:post.list(params)
   return self.root.get_in_team('/posts', a:params).posts
+endfunction
+
+function! s:post.list_id(params) abort
+  return map(self.list(a:params), {_, item -> item.id})
+endfunction
+
+function! s:post.list_urn(params) abort
+  return map(self.list(a:params), {_, item -> 'docbase:' . self.root.domain . ':' . item.id})
 endfunction
 
 " Function: メモの詳細取得
@@ -115,9 +138,9 @@ function! s:api.post_in_team(path, body)
 endfunction
 
 function! docbase#api#new(domain, token)
-  let client = deepcopy(s:api)
-  let client.domain = a:domain
-  let client.token = a:token
-  return client
+  let api = deepcopy(s:api)
+  let api.domain = a:domain
+  let api.token = a:token
+  return api
 endfunction
 

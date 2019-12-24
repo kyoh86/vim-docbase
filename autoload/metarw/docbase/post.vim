@@ -1,32 +1,26 @@
 scriptencoding utf-8
 
-"TODO: split this module to docbase#metarw#post.vim and docbase#post.vim
-"
 let s:V = vital#docbase#new()
 call s:V.load('Data.String')
 
-function! docbase#post#list_ids(urn) abort
+function! metarw#docbase#post#list_id(domain) abort
   echo 'メモを読み込んでいます...'
-  let l:client = docbase#client#for(a:urn.domain)
-  let l:posts = l:client.post().list({'per_page': 100})
-  let l:posts = map(l:posts, {_, item -> item.id})
-  return l:posts
+  let l:api = docbase#api#for(a:domain)
+  return l:api.post().list_id({'per_page': 100})
 endfunction
 
-function! docbase#post#list_urns(urn) abort
+function! metarw#docbase#post#list_urn(domain) abort
   echo 'メモを読み込んでいます...'
-  let l:client = docbase#client#for(a:urn.domain)
-  let l:posts = l:client.post().list({'per_page': 100})
-  let l:posts = map(l:posts, {_, item -> 'docbase:' . a:urn.domain . ':' . item.id})
-  return l:posts
+  let l:api = docbase#api#for(a:domain)
+  return l:api.post().list_urn({'per_page': 100})
 endfunction
 
-function! docbase#post#list(urn) abort
+function! metarw#docbase#post#list(domain) abort
   echo 'メモを読み込んでいます...'
-  let l:client = docbase#client#for(a:urn.domain)
-  let l:posts = l:client.post().list({'per_page': 100})
+  let l:api = docbase#api#for(a:domain)
+  let l:posts = l:api.post().list({'per_page': 100})
   let l:posts = map(l:posts, {_, item -> {
-        \ 'fakepath': 'docbase:' . a:urn.domain . ':' . item.id,
+        \ 'fakepath': 'docbase:' . a:domain . ':' . item.id,
         \ 'label': item.title
         \ }})
   let l:posts =
@@ -34,16 +28,16 @@ function! docbase#post#list(urn) abort
         \   'fakepath': 'docbase:',
         \   'label': 'List Domains'
         \ },{
-        \   'fakepath': 'docbase:' . a:urn.domain . ':new',
+        \   'fakepath': 'docbase:' . a:domain . ':new',
         \   'label': 'メモの新規作成'
         \ }] + l:posts
   return l:posts
 endfunction
 
-function! docbase#post#read(urn) abort
+function! metarw#docbase#post#read(urn) abort
   echom 'メモを読み込んでいます...'
-  let l:client = docbase#client#for(a:urn.domain)
-  let l:post = l:client.post().get(a:urn.id)
+  let l:api = docbase#api#for(a:urn.domain)
+  let l:post = l:api.post().get(a:urn.id)
 
   " frontmatters:
   let l:tags = map(get(l:post, 'tags', []), { _, t -> t.name })
@@ -74,7 +68,7 @@ function! docbase#post#read(urn) abort
   return join(l:content, "\n")
 endfunction
 
-function! docbase#post#new(urn) abort
+function! metarw#docbase#post#new(urn) abort
   " frontmatters:
   let l:content = [
     \ '---',
@@ -142,12 +136,12 @@ function! s:parse_post() abort
           let l:in_groups = v:false
         endif
       endif
-      let l:parts = s:V.Data.String.nsplit(l:line, 2, ':')
-      if len(l:parts) < 2
+      let [l:key; l:values] = split(l:line, ':', v:true)
+      if len(l:values) < 1
         throw printf('invalid frontmatter "%s" at line %d', l:line, l:l)
       endif
-      let l:key = s:V.Data.String.trim_end(l:parts[0])
-      let l:value = s:V.Data.String.trim_start(l:parts[1])
+      let l:key = s:V.Data.String.trim_end(l:key)
+      let l:value = s:V.Data.String.trim_start(join(l:values, ':'))
 
       try
         let l:value = json_decode(l:value)
@@ -188,17 +182,17 @@ function! s:parse_post() abort
   return l:post
 endfunction
 
-function! docbase#post#write(urn) abort
+function! metarw#docbase#post#write(urn) abort
   let l:post = s:parse_post()
-  let l:client = docbase#client#for(a:urn.domain)
-  call l:client.post().update(a:urn.id, l:post)
+  let l:api = docbase#api#for(a:urn.domain)
+  call l:api.post().update(a:urn.id, l:post)
   return ''
 endfunction
 
-function! docbase#post#create(urn) abort
+function! metarw#docbase#post#create(urn) abort
   let l:post = s:parse_post()
-  let l:client = docbase#client#for(a:urn.domain)
-  let l:post = l:client.post().create(l:post)
+  let l:api = docbase#api#for(a:urn.domain)
+  let l:post = l:api.post().create(l:post)
 
   " IDを投稿した結果のIDに置き換える
   let a:urn.id = l:post.id

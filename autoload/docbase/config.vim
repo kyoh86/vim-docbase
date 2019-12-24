@@ -1,3 +1,5 @@
+scriptencoding utf-8
+
 function! docbase#config#all()
   return get(g:, 'docbase', {})
 endfunction
