@@ -1,0 +1,156 @@
+*vim-docbase.txt* DocBase APIをVimから利用するためのプラグインです。
+
+==============================================================================
+目次                                                    *vim-docbase-contents*
+
+- はじめに                                          |vim-docbase-introduction|
+- インストール                                           |vim-docbase-install|
+- 関数                                                 |vim-docbase-functions|
+  - docbase#api#for(domain)                                |docbase#api#for()|
+  - docbase#api#new(domain, token)                         |docbase#api#new()|
+  - DocBase.post()                                            |DocBase.post()|
+  - DocBase.post().list(params)                        |DocBase.post().list()|
+  - DocBase.post().list_id(params)                  |DocBase.post().list_id()|
+  - DocBase.post().get(post_id)                         |DocBase.post().get()|
+  - DocBase.post().update(post_id, content)          |DocBase.post().update()|
+  - DocBase.post().create(content)                   |DocBase.post().create()|
+- オプション                                             |vim-docbase-options|
+  - g:docbase                                                      |g:docbase|
+- LICENSE                                                |vim-docbase-license|
+
+==============================================================================
+はじめに                                            *vim-docbase-introduction*
+
+DocBase APIをVimから利用するためのプラグインです。
+
+関連プラグイン:
+  vim-metarw-docbase (https://github.com/kyoh86/vim-metarw-docbase)
+  DocBaseをVimで編集するためのプラグイン
+
+==============================================================================
+インストール                                             *vim-docbase-install*
+
+`vim-plug` を使用する場合は以下の通りです。 >
+    Plug 'kyoh86/vim-docbase'
+<
+
+==============================================================================
+関数                                                   *vim-docbase-functions*
+
+docbase#api#for(domain)                                    *docbase#api#for()*
+
+    設定されたドメインからトークンを選択して、APIClientを生成します。
+    設定方法は |vim-docbase-options| を参照してください。
+
+docbase#api#new(domain, token)                             *docbase#api#new()*
+
+    指定されたドメインとトークンを使用して、APIClientを生成します。
+
+DocBase.post()                                                *DocBase.post()*
+
+    DocBaseのメモに関するAPI群を使用します。
+
+DocBase.post().list(params)                            *DocBase.post().list()*
+
+    DocBaseのメモを検索し、メモの一覧を取得します。
+
+    引数:
+        params: リクエストパラメータ。
+
+        | プロパティ | 内容             | 必須 | デフォルト値 | 最大値 |
+        | ---------- | ---------------- | ---- | ------------ | ------ |
+        | q          | 検索文字列       |      | *            |        |
+        | page       | ページ           |      | 1            |        |
+        | per_page   | ページ枚のメモ数 |      | 20           | 100    |
+
+    例: >
+        api.post().list(#{q: 'foo', page: 1, per_page: 100})
+<
+DocBase.post().list_id(params)                      *DocBase.post().list_id()*
+
+    DocBaseのメモを検索し、メモのIDの一覧を取得します。
+    詳細は |DocBase.post().list()| 参照。
+
+DocBase.post().get(post_id)                             *DocBase.post().get()*
+
+    DocBaseの指定のIDのメモを取得します。
+
+    引数:
+        post_id: メモID。
+
+DocBase.post().update(post_id, content)              *DocBase.post().update()*
+
+    DocBaseの指定したメモを更新します。
+
+    引数:
+
+        post_id: メモのID
+        content: 更新内容
+        | プロパティ | 内容               | 型            | デフォルト値 |
+        | ---------- | ------------------ | ------------- | ------------ |
+        | title      | メモのタイトル     | String        |              |
+        | body       | メモの本文         | String        |              |
+        | draft      | 下書き保存にするか | Boolean       |              |
+        | notice     | 通知するかどうか   | Boolean       | true         |
+        | tags       | タグ名の配列       | String Array  |              |
+        | scope      | 公開範囲           | String        |              |
+        | groups     | グループID配列     | Integer Array |              |
+
+    例: >
+        api.post().update(123456, #{notice: v:false, tags: ['foo', 'bar']})
+<
+DocBase.post().create(content)                       *DocBase.post().create()*
+
+    指定したドメインのチームに新しいメモを投稿します。
+
+    引数:
+
+        content: 投稿内容
+        | プロパティ | 内容               | 型            | デフォルト値 |
+        | ---------- | ------------------ | ------------- | ------------ |
+        | title      | メモのタイトル     | String        |              |
+        | body       | メモの本文         | String        |              |
+        | draft      | 下書き保存にするか | Boolean       |              |
+        | notice     | 通知するかどうか   | Boolean       | true         |
+        | tags       | タグ名の配列       | String Array  |              |
+        | scope      | 公開範囲           | String        |              |
+        | groups     | グループID配列     | Integer Array |              |
+
+    例: >
+        api.post().create(#{
+                      \ title: 'hoge',
+                      \ body: 'piyo',
+                      \ tags: ['foo', 'bar'],
+                      \ scope: 'private'
+                      \ })
+<
+==============================================================================
+オプション                                               *vim-docbase-options*
+
+g:docbase                                                          *g:docbase*
+    型: |Dict|
+
+`g:docbase` : 以下のように、domainとtokenの組み合わせを設定してください。
+>
+    let g:docbase = {
+                  \   'domains': [{
+                  \     'domain': 'DOMAIN',
+                  \     'token': 'TOKEN'
+                  \   }, {
+                    ...
+                  \   }]
+                  \ }
+<
+
+tokenを含むこれらの設定を `vimrc` に書く場合、dotfilesなどに
+アップロードしないよう注意してください。
+
+==============================================================================
+LICENSE                                                  *vim-docbase-license*
+
+MIT License.
+
+Also see http://www.opensource.org/licenses/MIT for more information.
+
+vim:textwidth=78:tabstop=4:shiftwidth=4:expandtab:filetype=help:norl:
+
