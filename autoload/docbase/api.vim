@@ -3,7 +3,6 @@ call s:V.load('Web.HTTP')
 
 let s:api_cache = {}
 
-" Factory
 function! docbase#api#for(domain) abort
   if has_key(s:api_cache, a:domain)
     return s:api_cache[a:domain]
@@ -27,15 +26,6 @@ function! s:api.post()
   return service
 endfunction
 
-" Function: メモの検索
-" Description: 指定したドメインのチームのメモを検索し、メモの一覧を取得します。
-" Arguments:
-"   - params: リクエストパラメータ
-"     | パラメータ | 内容             | 必須 | デフォルト値 | 最大値 |
-"     | ---------- | ---------------- | ---- | ------------ | ------ |
-"     | q          | 検索文字列       |      | *            |        |
-"     | page       | ページ           |      | 1            |        |
-"     | per_page   | ページ枚のメモ数 |      | 20           | 100    |
 function! s:post.list(params)
   return self.root.get_in_team('/posts', a:params).posts
 endfunction
@@ -44,49 +34,14 @@ function! s:post.list_id(params) abort
   return map(self.list(a:params), {_, item -> item.id})
 endfunction
 
-function! s:post.list_urn(params) abort
-  return map(self.list(a:params), {_, item -> 'docbase:' . self.root.domain . ':' . item.id})
-endfunction
-
-" Function: メモの詳細取得
-" Description: 指定したドメインのチームのメモのIDを指定して情報を取得します。
-" Arguments:
-"   - post_id: メモのID
 function! s:post.get(post_id)
   return self.root.get_in_team('/posts/' . a:post_id, {})
 endfunction
 
-" Function: メモの更新
-" Description: 指定したドメインのチームの、指定したメモを更新します。
-" Arguments:
-"   - post_id: メモのID
-"   - content: 更新内容
-"     | パラメータ | 内容                     | 型            | 必須                     | デフォルト値 |
-"     | ---------- | ------------------------ | ------------- | ------------------------ | ------------ |
-"     | title      | メモのタイトル           | String        |                          |              |
-"     | body       | メモの本文               | String        |                          |              |
-"     | draft      | 下書き保存にするかどうか | Boolean       |                          |              |
-"     | notice     | 通知するかどうか         | Boolean       |                          | true         |
-"     | tags       | タグ名の配列             | String Array  |                          |              |
-"     | scope      | 公開範囲                 | String        |                          |              |
-"     | groups     | グループID配列           | Integer Array | scopeがgroupの時のみ必須 |              |
 function! s:post.update(post_id, content)
   return self.root.patch_in_team('/posts/' . a:post_id, a:content)
 endfunction
 
-" Function: メモの作成
-" Description: 指定したドメインのチームに新しいメモを投稿します。
-" Arguments:
-"   - content: 更新内容
-"     | パラメータ | 内容                     | 型            | 必須                     | デフォルト値 |
-"     | ---------- | ------------------------ | ------------- | ------------------------ | ------------ |
-"     | title      | メモのタイトル           | String        |                          |              |
-"     | body       | メモの本文               | String        |                          |              |
-"     | draft      | 下書き保存にするかどうか | Boolean       |                          |              |
-"     | notice     | 通知するかどうか         | Boolean       |                          | true         |
-"     | tags       | タグ名の配列             | String Array  |                          |              |
-"     | scope      | 公開範囲                 | String        |                          |              |
-"     | groups     | グループID配列           | Integer Array | scopeがgroupの時のみ必須 |              |
 function! s:post.create(content)
   return self.root.post_in_team('/posts', a:content)
 endfunction

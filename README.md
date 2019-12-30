@@ -1,42 +1,50 @@
-# vim-docbase
+ vim-docbase
 
-TODO: split this plugin to vim-metarw-docbase
-TODO: update this document
+DocBase APIをVimから利用するためのプラグインです。
 
-DocBaseをVimで編集できるようにするプラグイン。
+## 関連プラグイン
 
-## 必要な依存プラグイン
-
-* [vim-metarw](https://github.com/kana/vim-metarw)
+* [vim-metarw-docbase](https://github.com/kyoh86/vim-metarw-docbase)
+    * DocBaseをVimで編集するためのプラグイン
 
 ## 設定項目
 
-`g:docbase` : 以下キーを持つdictのリスト
+`g:docbase` : 以下のように、domainとtokenの組み合わせを設定してください。
 
-* domain
-* token
-
-例:
-
+```vim
+let g:docbase = {
+              \   'domains': [{
+              \     'domain': 'DOMAIN',
+              \     'token': 'TOKEN'
+              \   }, {
+                ...
+              \   }]
+              \ }
 ```
-g:docbase = [
-  \ { 'domain': 'example', 'token': '1b_z85n.83hrwefsv9cxm8ihwaemsv9p283rih' },
-  \ { 'domain': 'sample', 'token': '1f_a89x.oo08yudfsjawofaj8hiqwnskljweiu' }
-  \ ]
-```
 
-### 注意
+**tokenを含むこれらの設定を `vimrc` に書く場合、dotfilesなどにアップロードしないよう注意してください**
 
-**tokenを含むこれらの設定を `vimrc` に書く場合、dotfilesなどにアップロードしないこと**
+## 利用できる関数
 
-## 編集方法
-
-* `:e docbase:`
-  * 設定されたドメインの一覧を表示する。Enterでドメインを選択。
-* `:e docbase:[domain]:`
-  * 指定したドメインの編集可能なオブジェクトの一覧を表示する。Enterでオブジェクトを選択。
-* `:e docbase:[domain]:post:`
-  * 指定したドメインの投稿の一覧を表示する。Enterで投稿の編集画面に入る。
+| Service | Function | Implemented |
+| --- | --- | --- | --- |
+| Post | List | ☑ |
+| Post | Create | ☑ |
+| Post | Get | ☑ |
+| Post | Edit | ☑ |
+| Post | Archive | ☐ |
+| Post | Unarchive | ☐ |
+| Post | Delete | ☐ |
+| User | List | ☐ |
+| Comment | Create | ☐ |
+| Comment | Delete | ☐ |
+| Attachment | Upload | ☐ |
+| Tag | List | ☐ |
+| Group | Create | ☐ |
+| Group | Get | ☐ |
+| Group | List | ☐ |
+| Group | AddUsers | ☐ |
+| Group | RemoveUsers | ☐ |
 
 # LICENSE
 
