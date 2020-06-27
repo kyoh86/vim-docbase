@@ -1,0 +1,17 @@
+!_TAG_FILE_ENCODING	utf-8	//
+DocBase.post()	vim-docbase.jax	/*DocBase.post()*
+DocBase.post().create()	vim-docbase.jax	/*DocBase.post().create()*
+DocBase.post().get()	vim-docbase.jax	/*DocBase.post().get()*
+DocBase.post().list()	vim-docbase.jax	/*DocBase.post().list()*
+DocBase.post().list_id()	vim-docbase.jax	/*DocBase.post().list_id()*
+DocBase.post().update()	vim-docbase.jax	/*DocBase.post().update()*
+docbase#api#for()	vim-docbase.jax	/*docbase#api#for()*
+docbase#api#new()	vim-docbase.jax	/*docbase#api#new()*
+g:docbase	vim-docbase.jax	/*g:docbase*
+vim-docbase-contents	vim-docbase.jax	/*vim-docbase-contents*
+vim-docbase-functions	vim-docbase.jax	/*vim-docbase-functions*
+vim-docbase-install	vim-docbase.jax	/*vim-docbase-install*
+vim-docbase-introduction	vim-docbase.jax	/*vim-docbase-introduction*
+vim-docbase-license	vim-docbase.jax	/*vim-docbase-license*
+vim-docbase-options	vim-docbase.jax	/*vim-docbase-options*
+vim-docbase.txt	vim-docbase.jax	/*vim-docbase.txt*
